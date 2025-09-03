@@ -87,6 +87,11 @@
         <summary>Night Light control mode</summary>
         <description>Set the way Caffeine interacts with the Night light setting.</description>
     </key>
+    <key name="do-not-disturb-control" enum="org.gnome.shell.extensions.caffeine.context-control">
+        <default>"never"</default>
+        <summary>Do Not Disturb control mode</summary>
+        <description>Set the way Caffeine interacts with the Do Not Disturb (notifications banners) setting.</description>
+    </key>
     <key name="screen-blank" enum="org.gnome.shell.extensions.caffeine.context-control">
         <default>"never"</default>
         <summary>Allow screen blank</summary>

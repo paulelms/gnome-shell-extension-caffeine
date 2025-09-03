@@ -78,6 +78,18 @@ class CaffeineGeneralPage extends Adw.PreferencesPage {
             selected: this._settings.get_enum(this._settingsKey.NIGHT_LIGHT)
         });
 
+        // Enable / disable Do Not Disturb (notifications banners)
+        let dndControl = new Gtk.StringList();
+        dndControl.append(_('Never'));
+        dndControl.append(_('Always'));
+        dndControl.append(_('For apps on list'));
+        let dndControlRow = new Adw.ComboRow({
+            title: _('Enable Do Not Disturb'),
+            subtitle: _('Toggles Do Not Disturb (hide notification banners) with Caffeine\'s state'),
+            model: dndControl,
+            selected: this._settings.get_enum(this._settingsKey.DO_NOT_DISTURB)
+        });
+
         // Allow blank screen
         let allowBlankScreen = new Gtk.StringList();
         allowBlankScreen.append(_('Never'));
@@ -95,6 +107,7 @@ class CaffeineGeneralPage extends Adw.PreferencesPage {
         behaviorGroup.add(enableMprisRow);
         behaviorGroup.add(rememberStateRow);
         behaviorGroup.add(pauseNightLightRow);
+        behaviorGroup.add(dndControlRow);
         behaviorGroup.add(allowBlankScreenRow);
         this.add(behaviorGroup);
 
@@ -143,6 +156,9 @@ class CaffeineGeneralPage extends Adw.PreferencesPage {
         });
         pauseNightLightRow.connect('notify::selected', (widget) => {
             this._settings.set_enum(this._settingsKey.NIGHT_LIGHT, widget.selected);
+        });
+        dndControlRow.connect('notify::selected', (widget) => {
+            this._settings.set_enum(this._settingsKey.DO_NOT_DISTURB, widget.selected);
         });
         allowBlankScreenRow.connect('notify::selected', (widget) => {
             this._settings.set_enum(this._settingsKey.SCREEN_BLANK, widget.selected);

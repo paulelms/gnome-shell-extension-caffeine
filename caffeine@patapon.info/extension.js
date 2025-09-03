@@ -49,6 +49,7 @@ const RESTORE_KEY = 'restore-state';
 const FULLSCREEN_KEY = 'enable-fullscreen';
 const MPRIS_KEY = 'enable-mpris';
 const NIGHT_LIGHT_KEY = 'nightlight-control';
+const DO_NOT_DISTURB_KEY = 'do-not-disturb-control';
 const TOGGLE_SHORTCUT = 'toggle-shortcut';
 const TIMER_KEY = 'countdown-timer';
 const SCREEN_BLANK = 'screen-blank';
@@ -160,6 +161,8 @@ const InhibitorManager = GObject.registerClass({
             `changed::${MPRIS_KEY}`,
             () => this._onMprisSettingChange(),
             `changed::${NIGHT_LIGHT_KEY}`,
+            () => this._updateState(),
+            `changed::${DO_NOT_DISTURB_KEY}`,
             () => this._updateState(),
             `changed::${INHIBIT_APPS_KEY}`,
             () => this._updateState(),
@@ -369,6 +372,16 @@ const InhibitorManager = GObject.registerClass({
             }
         }
 
+        // Update Do Not Disturb if required
+        if (this.isDoNotDisturbManaged()) {
+            this._setDoNotDisturb(shouldInhibit);
+        } else if (!shouldInhibit) {
+            // If no longer inhibiting and we previously changed it, restore
+            if (this._dndWasModified) {
+                this._setDoNotDisturb(false);
+            }
+        }
+
         // Let indicator know that either the state or reasons may have changed
         this.emit('update');
 
@@ -446,6 +459,33 @@ const InhibitorManager = GObject.registerClass({
         }
 
         return handleNightLight;
+    }
+
+    isDoNotDisturbManaged() {
+        let handleDnd = this._settings.get_enum(DO_NOT_DISTURB_KEY) === ControlContext.ALWAYS;
+        if (this._lastReasons && this._lastReasons.includes('app')) {
+            handleDnd = this._settings.get_enum(DO_NOT_DISTURB_KEY) > ControlContext.NEVER;
+        }
+        return handleDnd;
+    }
+
+    _getShellDndSetting() {
+        if (!this._notificationSettings) {
+            this._notificationSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.notifications' });
+        }
+        return this._notificationSettings.get_boolean('show-banners') === false; // true means DND active
+    }
+
+    _setDoNotDisturb(enable) {
+        if (!this._notificationSettings) {
+            this._notificationSettings = new Gio.Settings({ schema_id: 'org.gnome.desktop.notifications' });
+        }
+        const current = this._notificationSettings.get_boolean('show-banners') === false;
+        if (enable !== current) {
+            // show-banners false -> DND on
+            this._notificationSettings.set_boolean('show-banners', !enable);
+            this._dndWasModified = enable;
+        }
     }
 
     getInhibitState() {
@@ -959,6 +999,14 @@ class Caffeine extends QuickSettings.SystemIndicator {
                 message = message + '. ' + _('Night Light paused');
             } else {
                 message = message + '. ' + _('Night Light resumed');
+            }
+        }
+
+        if (this._inhibitorManager.isDoNotDisturbManaged()) {
+            if (state) {
+                message = message + '. ' + _('Do Not Disturb enabled');
+            } else {
+                message = message + '. ' + _('Do Not Disturb disabled');
             }
         }
 
